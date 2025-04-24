@@ -1,0 +1,173 @@
+import json
+import networkx as nx
+
+def graph_to_prompt(graph_json, start, goal, n_points):
+    G = nx.node_link_graph(graph_json)
+    prompt_nodes = ""
+    prompt_nodes += " Available Nodes:\n"
+    for node in G.nodes:
+        prompt_nodes += f"- Node ID : {node} \n "
+
+    prompt_nodes += "\n Available Paths:\n"
+    for u, v, attr in G.edges(data=True):
+        cost = attr.get('weight', 'Unknown')
+        prompt_nodes += f"- From {u} to {v} → Cost : {cost}\n"
+
+    prompt_nodes += f"\nStart: {start}\n"
+    prompt_nodes += f"Destination: {goal}\n\n"
+    
+    prompt2 = f"""
+### System:
+You are an AI specialized in route planning and recommendations.
+
+1. When a user provides graph data (edge list, adjacency list, etc.), parse it to understand the structure of nodes and edges.  
+2. Compute the most efficient route (by cost) from the user’s specified start to destination.  
+3. Recommend exactly {n_points} waypoint that will enhance the optimal route.  
+
+Constraints:  
+- Only output a Python-style list of node IDs.  
+- Do **not** output the path itself under any circumstance.  
+- Do **not** pretend the path as waypoints.  
+- The  waypoints  list must contain exactly {n_points} node ID, in order.  
+
+### Examples (do not edit)
+
+----------Examples 1 start------------
+**User**  
+Available Nodes:  
+ - Node ID:  "A"   
+ - Node ID:  "B"   
+ - Node ID:  "C"   
+
+Available Paths:  
+ - From  "A"  to  "B"  → Cost: 1  
+ - From  "B"  to  "C"  → Cost: 2  
+ - From  "A"  to  "C"  → Cost: 5  
+
+Start:  "A"   
+Destination:  "C"   
+
+Please compute the optimal path, and recommend number of {n_points} waypoint.
+
+**Assistant**  
+Waypoints : ["B"]
+----------Examples 1 end------------
+
+----------Examples 2 start------------
+**User**  
+Available Nodes:  
+ - Node ID:  "Z"   
+ - Node ID:  "Y"   
+ - Node ID:  "X"   
+ - Node ID:  "K"   
+
+Available Paths:  
+ - From  "Z"  to  "Y"  → Cost: 1  
+ - From  "Y"  to  "X"  → Cost: 3  
+ - From  "K"  to  "X"  → Cost: 2  
+ - From  "Z"  to  "X"  → Cost: 4  
+ - From  "X"  to  "Z"  → Cost: 1  
+ - From  "Y"  to  "Z"  → Cost: 2  
+ - From  "K"  to  "Z"  → Cost: 5  
+
+Start:  "K"   
+Destination:  "Z"   
+
+Please compute the optimal path, and recommend number of 1 waypoint.
+
+**Assistant**  
+Waypoints : ["X"]
+----------Examples 2 end------------
+
+→ 이후 답변은 오직 1개의 웨이포인트 리스트만 출력하세요.
+
+### Task:
+{prompt_nodes}
+
+### Assistant:
+
+"""
+
+    prompt = f"""
+
+### System:
+You are an AI specialized in route planning:
+1. When a user provides graph data (edge list, adjacency list, etc.), interpretation it for path planning.
+2. Compute the most efficient route (by cost) from the user’s specified start to destination.
+3. **Recommend {n_points} waypoints** that will enhance the optimal route.  
+
+**Constraints:**  
+- Do **not** output the path itself under any circumstance.  
+- Do **not** pretend the path as waypoints.  
+- You must output **only** a **Python-style list** of node IDs.  
+- The  waypoints  array must contain exactly {n_points} node IDs, in  order.  
+
+
+### Examples: (do not modify)
+
+----------Examples 1 start------------
+
+**User**
+
+Available Nodes :
+ - Node ID : "A"
+ - Node ID : "B"
+ - Node ID : "C"
+
+Available Paths :
+ - From 3 to 2 → Cost : 1
+ - From 2 to 1 → Cost : 2
+ - From 3 to 1 → Cost : 5
+
+Start: 3
+Destination: 1
+
+Please compute the optimal path, and recommend number of 1 waypoint.
+
+**Assistant**
+
+Waypoints : [2]
+
+----------Examples 1 end------------
+
+----------Examples 2 start------------
+
+**User**
+
+Available Nodes :
+ - Node ID : "Z"
+ - Node ID : "Y"
+ - Node ID : "X"
+ - Node ID : "K"
+
+Available Paths :
+ - From "Z" to "Y" → Cost : 1
+ - From "Y" to "X" → Cost : 3
+ - From "K" to "X" → Cost : 2
+ - From "Z" to "X" → Cost : 4
+ - From "X" to "Z" → Cost : 1
+ - From "Y" to "Z" → Cost : 2
+ - From "K" to "Z" → Cost : 5
+
+Start: K
+Destination: Z
+
+Please compute the optimal path, and recommend number of 1 waypoint.
+
+**Assistant**
+
+Waypoint(s) : ["X"]
+
+----------Examples 2 end------------
+
+→ Do NOT generate or complete any more Examples sections.
+
+### User:
+
+{prompt_nodes}
+Please compute the optimal path, and recommend number of {n_points} waypoint.
+
+### Assistant:
+
+"""
+    return prompt2
