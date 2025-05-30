@@ -1,3 +1,9 @@
+data/.
+# Jupyter Notebook 체크포인트 무시
+.ipynb_checkpoints/
+data/bus.csv 
+# CSV 파일 무시
+*.csv
 data/버스카드_이력_20250301-20250331.csv
 data/dataRequest.txt
 버스카드_이력_20250301-20250331.csv
